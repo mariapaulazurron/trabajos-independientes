@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?><sqlb_project><db path="G:/SQLiteDatabaseBrowserPortable/biblioteca.db" readonly="0" foreign_keys="1" case_sensitive_like="0" temp_store="0" wal_autocheckpoint="1000" synchronous="2"/><attached/><window><main_tabs open="structure browser pragmas query" current="1"/></window><tab_structure><column_width id="0" width="300"/><column_width id="1" width="0"/><column_width id="2" width="100"/><column_width id="3" width="1764"/><column_width id="4" width="0"/><expanded_item id="0" parent="1"/><expanded_item id="1" parent="1"/><expanded_item id="2" parent="1"/><expanded_item id="3" parent="1"/></tab_structure><tab_browse><current_table name="4,7:mainautores"/><default_encoding codec=""/><browse_table_settings><table schema="main" name="autores" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_"><sort/><column_widths><column index="1" value="63"/><column index="2" value="140"/><column index="3" value="96"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table></browse_table_settings></tab_browse><tab_sql><sql name="SQL 1">-- 1. CONFIGURACIÓN INICIAL
+-- Activar soporte para claves foráneas (desactivado por defecto en SQLite)
+PRAGMA foreign_keys = ON;
+
+-- Limpieza preventiva en caso de ejecutarlo múltiples veces
+DROP VIEW IF EXISTS vista_catalogo;
+DROP TABLE IF EXISTS prestamos;
+DROP TABLE IF EXISTS libros;
+DROP TABLE IF EXISTS autores;
+
+-- 2. CREACIÓN DE TABLAS
+CREATE TABLE autores (
+    id_autor INTEGER PRIMARY KEY AUTOINCREMENT,
+    nombre TEXT NOT NULL,
+    nacionalidad TEXT
+);
+
+CREATE TABLE libros (
+    isbn TEXT PRIMARY KEY,
+    titulo TEXT NOT NULL,
+    anio_publicacion INTEGER,
+    id_autor INTEGER,
+    FOREIGN KEY (id_autor) REFERENCES autores(id_autor) ON DELETE CASCADE
+);
+
+CREATE TABLE prestamos (
+    id_prestamo INTEGER PRIMARY KEY AUTOINCREMENT,
+    isbn TEXT,
+    persona TEXT NOT NULL,
+    fecha_prestamo DATE DEFAULT CURRENT_DATE,
+    devuelto INTEGER DEFAULT 0, -- 0 = En préstamo, 1 = Devuelto
+    FOREIGN KEY (isbn) REFERENCES libros(isbn) ON DELETE CASCADE
+);
+
+-- 3. INSERCIÓN DE DATOS DE PRUEBA
+INSERT INTO autores (nombre, nacionalidad) VALUES 
+('Gabriel García Márquez', 'Colombiana'),
+('George Orwell', 'Británica'),
+('Ray Bradbury', 'Estadounidense');
+
+INSERT INTO libros (isbn, titulo, anio_publicacion, id_autor) VALUES 
+('978-0307474728', 'Cien años de soledad', 1967, 1),
+('978-0451524935', '1984', 1949, 2),
+('978-1451673319', 'Fahrenheit 451', 1953, 3);
+
+INSERT INTO prestamos (isbn, persona) VALUES 
+('978-0307474728', 'Carlos Gómez'),
+('978-0451524935', 'Ana Martínez');
+
+-- 4. ACTUALIZACIÓN DE EJEMPLO
+-- Marcar como devuelto el préstamo de Ana
+UPDATE prestamos 
+SET devuelto = 1 
+WHERE id_prestamo = 2;
+
+-- 5. VISTA DE CONSULTA RÁPIDA
+CREATE VIEW vista_catalogo AS
+SELECT 
+    l.isbn, 
+    l.titulo, 
+    a.nombre AS autor, 
+    l.anio_publicacion,
+    CASE 
+        WHEN p.devuelto = 0 THEN 'Prestado a ' || p.persona
+        ELSE 'Disponible'
+    END AS estado
+FROM libros l
+JOIN autores a ON l.id_autor = a.id_autor
+LEFT JOIN prestamos p ON l.isbn = p.isbn AND p.devuelto = 0;
+
+-- 6. VER RESULTADOS
+SELECT * FROM vista_catalogo;</sql><current_tab id="0"/></tab_sql></sqlb_project>
